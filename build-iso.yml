@@ -1,0 +1,30 @@
+name: Build Leaf OS ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+
+      - name: Build the ISO in a Debian 12 container
+        run: docker run --rm --privileged -v "$PWD":/build -w /build debian:bookworm bash ./build.sh
+
+      - name: Publish the ISO as a release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: leafos-3.0-build-${{ github.run_number }}
+          name: Leaf OS 3.0 ISO (build ${{ github.run_number }})
+          body: Bootable Leaf OS 3.0 for VirtualBox. Download leafos-3.0-amd64.iso below.
+          files: out/leafos-3.0-amd64.iso
